@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const validator = require('validator');
 const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
@@ -18,14 +18,24 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         trim: true,
         match: [/\S+@\S+\.\S+/, 'is invalid'],
+        validate(value) {            if (!validator.isEmail(value)) {
+                throw new Error('Invalid email format');
+            }
+        }
     },
     password: {
         type: String,
         required: true,
+        minlength: 8,
     },
     age: {
         type: Number,
         min: 18,
+        validate(value) {
+            if (value < 18) {
+                throw new Error('Age must be at least 18');
+            }
+        }
     },
     gender: {
         type: String,
@@ -38,6 +48,11 @@ const userSchema = new mongoose.Schema({
     photoUrl: {
         type: String,
         default: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
+            validate(value) {
+            if (value && !validator.isURL(value)) {
+                throw new Error('Invalid URL format for photoUrl');
+            }
+        }
     },
     about: {
         type: String,
