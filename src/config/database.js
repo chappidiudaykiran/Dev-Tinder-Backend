@@ -1,14 +1,18 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+    const dbUri = process.env.MONGODB_URI;
+    if (!dbUri) {
+        throw new Error('MONGODB_URI is not configured');
+    }
+
     try {
-        await mongoose.connect(
-            'mongodb+srv://udaykiran24689_db_user:70HXSzyS4iRwYEML@project0.stmb8pq.mongodb.net/devTinder',
-        );
+        await mongoose.connect(dbUri);
         console.log('MongoDB connected successfully');
     } catch (err) {
-        console.error('MongoDB connection error:', err);
-    }   
+        console.error('MongoDB connection error:', err.message);
+        throw err;
+    }
 };
 
 module.exports = connectDB; 
