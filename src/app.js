@@ -2,11 +2,7 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const connectDB = require("./config/database");
-const User = require("./models/user"); // Import the User model
-const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
-const { adminAuth, userAuth } = require("./middlewares/auth");
 app.use(cookieParser());
 app.use(express.json()); // Middleware to parse JSON request bodies
 
@@ -18,17 +14,29 @@ app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestsRouter);
 
+const PORT = process.env.PORT || 3000;
+let isServerStarted = false;
 
-// Connect to MongoDB
-connectDB()
-  .then(() => {
-    console.log("Connected to MongoDB");
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("Failed to connect to MongoDB:", err);
-    process.exit(1); // Exit the application if the database connection fails
+const startServer = () => {
+  if (isServerStarted) {
+    return;
+  }
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
   });
+  isServerStarted = true;
+};
+
+const connectWithRetry = async () => {
+  try {
+    await connectDB();
+    console.log("Connected to MongoDB");
+  } catch (err) {
+    console.error("Failed to connect to MongoDB:", err.message);
+    console.log("Retrying MongoDB connection in 10 seconds...");
+    setTimeout(connectWithRetry, 10000);
+  }
+};
+
+startServer();
+connectWithRetry();

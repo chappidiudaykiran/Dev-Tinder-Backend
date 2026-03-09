@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
         required: true,
         minlength: 2,
         maxlength: 50,
+        index: true,
     },
     lastName: {
         type: String,
@@ -40,11 +41,8 @@ const userSchema = new mongoose.Schema({
     },
     gender: {
         type: String,
-        validate(value) {
-            if(!['Male', 'Female', 'Other'].includes(value)) {
-                throw new Error('Gender must be either  Male,Female or Other');
-            }
-        }
+        enum: ['Male', 'Female', 'Other'],  
+        message: 'Gender must be either Male, Female, or Other',
     },
     photoUrl: {
         type: String,
