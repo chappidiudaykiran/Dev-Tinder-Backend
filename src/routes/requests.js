@@ -70,4 +70,38 @@ requestsRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res
   }
 });
 
+requestsRouter.post("/request/review/:status/:requestId", userAuth, async (req, res) => {
+  try{
+    const loggedInUserId = req.user?._id;
+    const requestId = req.params.requestId?.trim();
+    const status = req.params.status?.trim().toLowerCase();
+    if (!loggedInUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    } 
+    const allowedStatuses = ["accepted", "rejected"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status. Status must be either 'accepted' or 'rejected'." });
+    }
+    const connectionRequest = await ConnectionRequestModel.findOne({
+      _id: requestId,
+      toUserId: loggedInUserId,
+      status: "interested",
+    }); 
+    if (!connectionRequest) {
+      return res.status(404).json({ message: "Connection request not found or not reviewable" });
+    }
+    connectionRequest.status = status;
+    const data = await connectionRequest.save();
+    res.json({ message: "Connection request " + status, data });
+
+  }
+  catch(error){ 
+    console.error("Error reviewing connection request:", error);
+    if (error?.name === "ValidationError" || error?.name === "CastError") {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: error?.message || "Internal server error" });
+  }
+});
+
 module.exports = requestsRouter;
