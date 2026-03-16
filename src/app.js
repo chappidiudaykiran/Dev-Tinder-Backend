@@ -5,7 +5,11 @@ const connectDB = require("./config/database");
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 app.use(express.json()); // Middleware to parse JSON request bodies
-
+const cors = require("cors");
+app.use(cors({
+  origin: "http://localhost:5173", // Replace with your frontend URL
+  credentials: true, // Allow cookies to be sent with requests
+}));
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestsRouter = require("./routes/requests");
