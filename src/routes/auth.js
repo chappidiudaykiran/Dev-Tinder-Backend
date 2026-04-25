@@ -42,11 +42,16 @@ authRouter.post("/login", async (req, res) => {
       return res.status(401).send("Invalid credentials");
     }
     const token = user.getJWT();
-    res.cookie("token", token, {
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-    });
+      secure: isProduction,
+      sameSite: isProduction ? "None" : "Lax",
+      path: "/",
+      maxAge: 10 * 24 * 60 * 60 * 1000,
+    };
+
+    res.cookie("token", token, cookieOptions);
     res.send("Login successful");
   } catch (err) {
     console.error("Login failed:", err.message);
@@ -55,7 +60,13 @@ authRouter.post("/login", async (req, res) => {
 });
 
 authRouter.post("/logout", (req, res) => {
-  res.clearCookie("token");
+  const isProduction = process.env.NODE_ENV === "production";
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "None" : "Lax",
+    path: "/",
+  });
   res.send("Logout successful");
 });
 

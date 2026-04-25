@@ -6,10 +6,28 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 app.use(express.json()); // Middleware to parse JSON request bodies
 const cors = require("cors");
-app.use(cors({
-  origin: "http://localhost:5173", // Replace with your frontend URL
-  credentials: true, // Allow cookies to be sent with requests
-}));
+
+const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestsRouter = require("./routes/requests");
@@ -21,28 +39,21 @@ app.use("/", requestsRouter);
 app.use("/", userRouter);
 
 const PORT = process.env.PORT || 3000;
-let isServerStarted = false;
 
-const startServer = () => {
-  if (isServerStarted) {
-    return;
-  }
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-  isServerStarted = true;
-};
-
-const connectWithRetry = async () => {
+const startServer = async () => {
   try {
     await connectDB();
-    console.log("Connected to MongoDB");
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
   } catch (err) {
-    console.error("Failed to connect to MongoDB:", err.message);
-    console.log("Retrying MongoDB connection in 10 seconds...");
-    setTimeout(connectWithRetry, 10000);
+    console.error("Failed to start server:", err.message);
+    process.exit(1);
   }
 };
 
-startServer();
-connectWithRetry();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
